@@ -1,0 +1,103 @@
+-- Приватный авто-сбор + GUI для Grow a Garden (твой личный)
+-- Полная версия с менюшкой
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local player = Players.LocalPlayer
+
+local autoCollect = false
+local collectRadius = 70
+
+-- === ТВОЯ ОРИГИНАЛЬНАЯ ЛОГИКА ===
+local function getHarvestPrompt(obj)
+    if not obj then return nil end
+    return obj:FindFirstChildWhichIsA("ProximityPrompt") or 
+           obj:FindFirstChild("Prompt", true)
+end
+
+local function isCrop(obj)
+    if not obj then return false end
+    local name = obj.Name:lower()
+    return name:find("plant") or name:find("crop") or name:find("fruit") or 
+           name:find("vegetable") or name:find("harvest") or 
+           name:find("tree") or name:find("bush")
+end
+
+local function collectNearby()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then 
+        return 
+    end
+    
+    local rootPos = player.Character.HumanoidRootPart.Position
+    
+    for _, descendant in ipairs(Workspace:GetDescendants()) do
+        if isCrop(descendant) then
+            local prompt = getHarvestPrompt(descendant)
+            if prompt then
+                local part = descendant:FindFirstChildWhichIsA("BasePart") or descendant.PrimaryPart
+                if part and (rootPos - part.Position).Magnitude <= collectRadius then
+                    prompt.HoldDuration = 0
+                    prompt:InputHoldBegin()
+                    task.wait(0.08)
+                    prompt:InputHoldEnd()
+                end
+            end
+        end
+    end
+end
+
+-- Главный цикл авто-сбора
+task.spawn(function()
+    while task.wait(0.35) do
+        if autoCollect then
+            collectNearby()
+        end
+    end
+end)
+
+-- === МЕНЮШКА GUI ===
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GrowPrivateGUI"
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 240)
+Frame.Position = UDim2.new(0.5, -150, 0.4, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 14)
+Corner.Parent = Frame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.BackgroundTransparency = 1
+Title.Text = "🌱 Приватный Авто-Сбор"
+Title.TextColor3 = Color3.fromRGB(0, 255, 120)
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+Title.Parent = Frame
+
+-- Кнопка Вкл/Выкл
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0.85, 0, 0, 55)
+ToggleBtn.Position = UDim2.new(0.075, 0, 0.28, 0)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+ToggleBtn.Text = "Авто-сбор: ВЫКЛ"
+ToggleBtn.TextColor3 = Color3.new(1,1,1)
+ToggleBtn.TextScaled = true
+ToggleBtn.Font = Enum.Font.GothamSemibold
+ToggleBtn.Parent = Frame
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 10)
+BtnCorner.Parent = ToggleBtn
+
+-- Радиус
+local RadiusLabel = Instance.new("TextLabel")
+RadiusLabel.Size = UDim2.new(0.85, 0, 0, 30)
+RadiusLabel.Position = UDim2.new(0.075, 0, 0.55, 0)
+RadiusLabel.BackgroundTransparency = 1
